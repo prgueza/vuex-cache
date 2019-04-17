@@ -5,6 +5,9 @@
  "license": "MIT",
  "repository": "pedro-rodalia/cache",
  "main": "index.js",
+ "scripts": {
+  "build": "npx babel src --out-dir dist"
+ },
  "keywords": [
   "cache",
   "vue",
@@ -14,7 +17,14 @@
   "package"
  ],
  "dependencies": {
+  "@babel/polyfill": "^7.4.3",
   "moment": "^2.24.0",
   "string-hash": "^1.1.3"
+ },
+ "devDependencies": {
+  "@babel/cli": "^7.4.3",
+  "@babel/core": "^7.4.3",
+  "@babel/plugin-transform-arrow-functions": "^7.2.0",
+  "@babel/preset-env": "^7.4.3"
  }
 }
