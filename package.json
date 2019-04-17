@@ -4,7 +4,7 @@
  "description": "Vue cache plugin for axios using vuex store",
  "license": "MIT",
  "repository": "pedro-rodalia/cache",
- "main": "index.js",
+ "main": "lib/index.js",
  "scripts": {
   "build": "npx babel src --out-dir dist"
  },
