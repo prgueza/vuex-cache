@@ -1,20 +1,20 @@
 {
-	"name": "@pedro-rodalia/cache",
-	"version": "1.0.0",
-  "description": "Vue cache plugin for axios using vuex store",
-  "license": "MIT",
-  "repository": "pedro-rodalia/cache",
-  "main": "index.js",
-  "keywords": [
-    "cache",
-		"vue",
-		"vuex",
-		"plugin",
-    "npm",
-    "package",
-  ],
-	"dependencies": {
-		"moment": "^2.24.0",
-		"string-hash": "^1.1.3"
-	}
+ "name": "@pedro-rodalia/cache",
+ "version": "1.0.0",
+ "description": "Vue cache plugin for axios using vuex store",
+ "license": "MIT",
+ "repository": "pedro-rodalia/cache",
+ "main": "index.js",
+ "keywords": [
+  "cache",
+  "vue",
+  "vuex",
+  "plugin",
+  "npm",
+  "package"
+ ],
+ "dependencies": {
+  "moment": "^2.24.0",
+  "string-hash": "^1.1.3"
+ }
 }
