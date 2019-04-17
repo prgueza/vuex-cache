@@ -1,0 +1,8 @@
+{
+	"name": "@pedro-rodalia/cache",
+	"version": "1.0.0",
+	"dependencies": {
+		"moment": "^2.24.0",
+		"string-hash": "^1.1.3"
+	}
+}
