@@ -6,6 +6,7 @@
  "repository": "pedro-rodalia/cache",
  "main": "lib/index.js",
  "scripts": {
+  "start": "npx babel --watch src --out-dir lib",
   "build": "npx babel src --out-dir dist"
  },
  "keywords": [
