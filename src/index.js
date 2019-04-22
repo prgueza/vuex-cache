@@ -17,7 +17,7 @@ export default function cachePlugin (instance, customSettings) {
     }
     // Axios interceptor function that checks if the request is cached
     const RequestInterceptor = (config) => {
-      const { method, url, baseURL, clean, data: body } = config
+      const { method, url, baseURL, clean, garbageColector, data: body } = config
       if (clean) { // If the clean setting is set in the config, clean up cache before making the request
         store.dispatch('clean', { clean })
       }
@@ -30,7 +30,7 @@ export default function cachePlugin (instance, customSettings) {
         const responseIsCached = store.getters.cache.hasOwnProperty([key]) // Look for the cached response
         if (responseIsCached) { // If the response is stored in cache
           const cachedResponse = store.getters.cache[key] // get cachedResponse
-          if (moment(cachedResponse.expires).isAfter(moment())) { // If it hasn't expired
+          if (moment(cachedResponse.expires).isAfter(moment())) { // If it hasn't expired or autodestroy is set
             config.cachedResponse = cachedResponse // Store cached response in config
             config.adapter = Adapter // Set the adapter to return the cached response
             config.cache = false // Set cache to false so the response interceptor doesn't re-store the response data
@@ -120,19 +120,22 @@ export default function cachePlugin (instance, customSettings) {
         cache ({ commit, getters }, payload) {
           const { config, data } = payload
           const { groups, url, data: body } = config
+          const groupsArray = Object.values(groups)
           const garbageColector = config.garbageColector || getters.garbageColector // Custom or default garbage colector
           const ttl = config.ttl || getters.ttl // Custom or default ttl
           const key = stringHash(url + body)
+          const garbageColectorId = getters.cache[key] && getters.cache[key].garbageColectorId // If the call is already cached
+          garbageColectorId && (clearTimeout(garbageColectorId)) // Unset the timeout
           const value = {
             data,
             body,
             garbageColectorId: garbageColector && setTimeout(() => { commit('DELETE_FROM_CACHE', { key }) }, ttl),
             endpoint: config.url,
-            groups: config.groups,
+            groups: groupsArray,
             expires: moment().add(ttl, 'milliseconds').format(),
             timestamp: moment().format()
           }
-          groups && groups.map(group => {
+          groupsArray && groupsArray.map(group => {
             getters.group(group) && getters.group(group).length > 0
               ? commit('UPDATE_GROUP', { group, key })
               : commit('SET_GROUP', { group, key })
