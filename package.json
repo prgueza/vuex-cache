@@ -1,9 +1,9 @@
 {
- "name": "@pedro-rodalia/cache",
- "version": "1.1.2-beta.1",
+ "name": "@pedro-rodalia/vuex-cache",
+ "version": "0.0.0",
  "description": "Vue cache plugin for axios using vuex store",
  "license": "MIT",
- "repository": "pedro-rodalia/cache",
+ "repository": "pedro-rodalia/vuex-cache",
  "main": "lib/index.js",
  "scripts": {
   "version": "npm run build && git add -A lib",
