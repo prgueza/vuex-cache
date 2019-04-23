@@ -1,61 +1,56 @@
 import stringHash from 'string-hash'
 import moment from 'moment'
+import isCached from './utils/isCached.js'
 
 /* CACHE PLUGIN */
 export default function cachePlugin (instance, customSettings) {
   return store => {
+
     /* AXIOS INSTANCE HELPER FUNCTIONS */
+
     // Axios adapter function that simulates the server responding with cached data
     const Adapter = (config) => {
       const { data } = config.cachedResponse
       return Promise.resolve({
         data,
         config,
-        status: 304,
-        statusText: 'Not Modified'
+        status: config.cachedResponseStatus,
+        statusText: config.cachedResponseMessage
       })
     }
+
     // Axios interceptor function that checks if the request is cached
     const RequestInterceptor = (config) => {
-      const { method, url, baseURL, clean, garbageColector, data: body } = config
-      if (clean) { // If the clean setting is set in the config, clean up cache before making the request
-        store.dispatch('clean', { clean })
-      }
+      const { method, url, baseURL, clean, garbageColector: localGarbageColector, data } = config
+      const { methods, endpoints, cache, garbageColector: globalGarbageColector } = store.getters
+      const garbageColector = localGarbageColector === undefined ? globalGarbageColector : localGarbageColector
+      // If the clean setting is set in the config, clean up cache before making the request
+      if (clean) store.dispatch('clean', { clean })
       // If the request could've been cached
-      const cacheIsTrue = config.cache
-      const matchesMethod = store.getters.methods.includes(method)
-      const matchesEndpoint = store.getters.endpoints.length === 0 || store.getters.endpoints.includes(url)
-      if (cacheIsTrue || (matchesMethod && matchesEndpoint)) {
-        const key = stringHash(baseURL + url + JSON.stringify(body))
-        const responseIsCached = store.getters.cache.hasOwnProperty([key]) // Look for the cached response
-        if (responseIsCached) { // If the response is stored in cache
-          const cachedResponse = store.getters.cache[key] // get cachedResponse
-          if (moment(cachedResponse.expires).isAfter(moment())) { // If it hasn't expired or autodestroy is set
-            config.cachedResponse = cachedResponse // Store cached response in config
-            config.adapter = Adapter // Set the adapter to return the cached response
-            config.cache = false // Set cache to false so the response interceptor doesn't re-store the response data
-            return config
-          }
-        }
+      if (isCached(methods, endpoints, config)) {
         config.cache = true // Set cache to true so the response gets stored
-        return config
+        const key = stringHash(baseURL + url + JSON.stringify(data))
+        const cachedResponse = cache[key] // Look for the cached response
+        if (cachedResponse && (garbageColector || moment(cachedResponse.expires).isAfter(moment()))) { // If the response is stored in cache
+          config.cachedResponse = cachedResponse // Store cached response in config
+          config.adapter = Adapter // Set the adapter to return the cached response
+          config.cache = false // Set cache to false so the response interceptor doesn't re-store the response data
+        }
       }
-      // If the response is not supposed to be cached
       return config
     }
+
     // Axios interceptor functions that caches the response from the server
     const ResponseInterceptor = (response) => {
-      const { config, data } = response
-      if (config.cache) { // If the request was configured to be cached
-        store.dispatch('cache', { config, data }) // Cache the response
-        return response
-      } else { // If the request wasn't configured to be cached just return the response
-        return response
-      }
+      const { config: { cache }, config, data } = response
+      if (cache) store.dispatch('cache', { config, data }) // Cache the response
+      return response
     }
 
     /* AXIOS INSTANCE CONFIGURATION */
     instance.defaults.cache = false // Calls are not cached by default
+    instance.defaults.cachedResponseStatus = customSettings.cachedResponseStatus || 304
+    instance.defaults.cachedResponseMessage = customSettings.cachedResponseMessage || 'Not modified'
     instance.defaults.groups = []
     instance.interceptors.request.use(RequestInterceptor)
     instance.interceptors.response.use(ResponseInterceptor)
@@ -96,10 +91,10 @@ export default function cachePlugin (instance, customSettings) {
           state.cache[key] = value
         },
         DELETE_FROM_CACHE (state, { key }) {
-          const { groups } = state.cache[key]
-          groups && groups.map(group => {
+          const { groups = [] } = state.cache[key]
+          groups.map(group => {
             state.groups[group] = state.groups[group].filter(el => el !== key)
-            if (state.groups[group].length < 0) delete state.groups[group]
+            if (state.groups[group].length === 0) delete state.groups[group]
           })
           delete state.cache[key]
         },
@@ -119,13 +114,13 @@ export default function cachePlugin (instance, customSettings) {
         },
         cache ({ commit, getters }, payload) {
           const { config, data } = payload
-          const { groups, url, data: body } = config
+          const { groups = [], url, data: body } = config
           const groupsArray = Object.values(groups)
           const garbageColector = config.garbageColector || getters.garbageColector // Custom or default garbage colector
           const ttl = config.ttl || getters.ttl // Custom or default ttl
           const key = stringHash(url + body)
           const garbageColectorId = getters.cache[key] && getters.cache[key].garbageColectorId // If the call is already cached
-          garbageColectorId && (clearTimeout(garbageColectorId)) // Unset the timeout
+          if (garbageColectorId) clearTimeout(garbageColectorId) // Unset the timeout
           const value = {
             data,
             body,
@@ -135,7 +130,7 @@ export default function cachePlugin (instance, customSettings) {
             expires: moment().add(ttl, 'milliseconds').format(),
             timestamp: moment().format()
           }
-          groupsArray && groupsArray.map(group => {
+          groupsArray.map(group => {
             getters.group(group) && getters.group(group).length > 0
               ? commit('UPDATE_GROUP', { group, key })
               : commit('SET_GROUP', { group, key })
@@ -148,8 +143,8 @@ export default function cachePlugin (instance, customSettings) {
           groupNames.forEach(name => {
             group(name) && group(name).forEach(key => {
               const { garbageColectorId } = getters.call(key)
-              garbageColectorId && (clearTimeout(garbageColectorId)) // Unset the timeout
-              commit('DELETE_FROM_CACHE', { key }) // Delete response
+              if (garbageColectorId) clearTimeout(garbageColectorId) // Unset the timeout
+              commit('DELETE_FROM_CACHE', { key }) // Delete responses
             })
             commit('DELETE_GROUP', { name }) // Delete the group
           })
