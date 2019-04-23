@@ -56,7 +56,10 @@ const config = {
   endpoints: [{
     endpoint: '/users',
     methods: ['get', 'post']
-  }]
+  }],
+  fallback: [400, 500],
+  cachedResponseStatus: 304,
+  cachedResponseMessage: 'This is a cached response'
 }
 
 // Initialize Vuex plugin using the created instance and custom settings
