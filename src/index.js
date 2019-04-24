@@ -59,7 +59,7 @@ export default function cachePlugin (instance, customSettings) {
       fallbackResponseMessage = 'Fallback result',
       fallbackResponseStatus,
     } = customSettings || {}
-    
+
     instance.defaults.cache = false // Calls are not cached by default
     instance.defaults.cachedResponseStatus = cachedResponseStatus
     instance.defaults.cachedResponseMessage = cachedResponseMessage
@@ -73,7 +73,7 @@ export default function cachePlugin (instance, customSettings) {
     const defaultSettings = {
       methods: ['get'],
       endpoints: [],
-      garbageCollector: true, // Remove old calls automatically
+      garbageCollector: false,
       fallback: [500],
       ttl: 60 // Default cache time to live in seconds
     }
