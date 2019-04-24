@@ -14,7 +14,7 @@ export default function isCached(methods, endpoints, { url, method, cache }) {
       break
       case 'objects':
       // check if endpoint is included and if so save the configuration for that endpoint
-      const endpointConfig = endpoints.find(endpoint => endpoint.endpoint === url)
+      const endpointConfig = endpoints.find(({ endpoint, exact }) => exact ? endpoint === url : new RegExp(endpoint).test(url))
       if (!!endpointConfig && endpointConfig.methods.includes(method)) return true // If is set as an object and the method exists in the methods configuration array
       else if (!!endpointConfig) return false
       break

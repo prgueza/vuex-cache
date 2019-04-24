@@ -31,3 +31,11 @@ test('Request should be cached because cache has been set manually to true', () 
 test('Request should not be cached because cache has been set manually to false', () => {
   expect(isCached([], [{endpoint: '/users', methods: ['post']}], { url: users, method })).toBe(false)
 })
+
+test('Request should be cached because endpoint configuration matches the endpoint', () => {
+  expect(isCached([], [{endpoint: '/users', methods: ['get']}], { url: `${users}/id`, method })).toBe(true)
+})
+
+test('Request should not be cached because endpoint configuration matching is set to exact', () => {
+  expect(isCached([], [{endpoint: '/users', methods: ['get'], exact: true}], { url: `${users}/id`, method })).toBe(true)
+})
