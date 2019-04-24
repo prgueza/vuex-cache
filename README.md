@@ -1,7 +1,7 @@
 # @pedro-rodalia/cache
 
-[![npm](https://img.shields.io/npm/v/@pedro-rodalia/cache.svg)](https://github.com/pedro-rodalia/cache)
-[![npm bundle size (minified)](https://img.shields.io/bundlephobia/min/@pedro-rodalia/cache.svg)](https://github.com/pedro-rodalia/cache)
+[![npm](https://img.shields.io/npm/v/@pedro-rodalia/vuex-cache.svg)](https://github.com/pedro-rodalia/vuex-cache)
+[![npm bundle size (minified)](https://img.shields.io/bundlephobia/min/@pedro-rodalia/vuex-cache.svg)](https://github.com/pedro-rodalia/vuex-cache)
 
 Configurable Vue cache plugin for axios using the vuex store.
 
