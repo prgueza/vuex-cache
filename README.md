@@ -79,6 +79,8 @@ The custom configuration object can have the following properties.
 | `fallback` | `array` | `[500]` | Determines whether to answer a request with an outdated cached response if the request has returned an error. By default it only has this behaviour for INTERNAL SERVER ERROR (500) errors. |
 | `cachedResponseStatus` | `number` | `304` | Determines the http status code for the cached response |
 | `cachedResponseMessage` | `string` | `'Not Modified'` | Determines the status message for the cached response |
+| `fallbackResponseStatus` | `number` | `cachedResponseStatus` | Determines the http status code for the outdated cached responses used with the `fallback` feature |
+| `fallbackResponseMessage` | `string` | `'Fallback result'` | Determines the status message for the outdated cached responses used with the `fallback` feature |
 
 - #### `methods` and `endpoints`
 
@@ -175,5 +177,29 @@ const config = {
 // disable the fallback feature
 const config {
   fallback: []
+}
+```
+
+- #### `cachedResponseStatus` and `cachedResponseMessage`
+
+This properties define the status code and status message for cached responses. By default is set to return a response with the `304` status code and a `'Not modified'` message, but can be configured to any other values.
+
+```js
+// Use this configuration to make the cache system transparent
+const config = {
+  cachedResponseStatus: 200,
+  cachedResponseMessage: 'OK'
+}
+```
+
+- #### `fallbackResponseStatus` and `fallbackResponseMessage`
+
+This properties define the status code and status message for responses used by the `fallback` feature. By default is set to return a response with the `cachedResponseStatus` code and a `'Fallback result'` message, but can be configured to any other values.
+
+```js
+// Use this configuration to make the cache system transparent
+const config = {
+  fallbackResponseStatus: 200,
+  fallbackResponseMessage: 'OK'
 }
 ```
