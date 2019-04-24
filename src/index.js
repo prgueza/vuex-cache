@@ -17,7 +17,7 @@ export default function cachePlugin (instance, customSettings) {
 
     // Axios interceptor function that checks if the request is cached
     const RequestInterceptor = (config) => {
-      const { method, url, baseURL, clean, garbageColector: localGarbageColector, data } = config
+      const { method, url, baseURL, clean, garbageColector: localGarbageColector, data, reload } = config
       const { methods, endpoints, cache, garbageColector: globalGarbageColector } = store.getters
       const garbageColector = localGarbageColector === undefined ? globalGarbageColector : localGarbageColector
       // If the clean setting is set in the config, clean up cache before making the request
@@ -27,7 +27,7 @@ export default function cachePlugin (instance, customSettings) {
         config.cache = true // Set cache to true so the response gets stored
         const key = stringHash(baseURL + url + JSON.stringify(data))
         const cachedResponse = cache[key] // Look for the cached response
-        if (cachedResponse && (garbageColector || moment(cachedResponse.expires).isAfter(moment()))) { // If the response is stored in cache
+        if (!reload && cachedResponse && (garbageColector || moment(cachedResponse.expires).isAfter(moment()))) {
           config.cachedResponse = cachedResponse // Store cached response in config
           config.adapter = Adapter // Set the adapter to return the cached response
           config.cache = false // Set cache to false so the response interceptor doesn't re-store the response data
