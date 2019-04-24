@@ -39,9 +39,24 @@ export const store = new Vuex.Store({
 })
 ```
 
+## Documentation
+
+- [Default global settings](#default-global-settings)
+- [Using custom global settings](#using-custom-global-settings)
+  - [Global settings](#global-settings)
+    - [`methods` and `endpoints`](#methods-and-endpoints)
+    - [`ttl`](#ttl)
+    - [`garbageCollector`](#garbagecollector)
+    - [`fallback`](#fallback)
+    - [`cachedResponseStatus` and `cachedResponseMessage`](#cachedresponsestatus-and-cachedresponsemessage)
+    - [`fallbackResponseStatus` and `cachedResponseMessage`](#fallbackresponsestatus-and-fallbackresponsemessage)
+- [Using custom request settings](#request-settings)
+
 ## Default global settings
 
-By default, the plugin is configured to cache only 'get' requests for every request that uses the axios instance. It stores the response for 60 seconds and has the garbage collector set to true so the store will clean itself up after a response is outdated.
+By default, the plugin is configured to cache only `'get'` requests for every request that uses the axios instance. It stores the response for `60` seconds and has the `garbageCollector` set to `false` so the store will not clean itself up after a response is outdated.
+
+It will try to `fallback` to cached responses on internal server errors (500) and return responses with a `304` status and a `'Not modified'` message for cached responses and `'Fallback result'` for fallback responses.
 
 ## Using custom global settings
 
@@ -74,7 +89,7 @@ The custom configuration object can have the following properties.
 | :------------- | :------------- | :------------- | :------------- |
 | `methods` | `array` | `['get']` | Defines a list of methods for which the responses will be cached |
 | `ttl` | `number` | `60` | Determines for how long a cached response is considered valid |
-| `garbageCollector` | `boolean` | `true` | If set to true responses will clean themselves up after they are no longer valid responses (`ttl` seconds have passed) |
+| `garbageCollector` | `boolean` | `false` | If set to true responses will clean themselves up after they are no longer valid responses (`ttl` seconds have passed) |
 | `endpoints` | `array/object` | `[]` | Defines a list of endpoints for which the responses will be cached / Defines an object with key/value pairs defining both the endpoint and the methods for the requests that will be cached |
 | `fallback` | `array` | `[500]` | Determines whether to answer a request with an outdated cached response if the request has returned an error. By default it only has this behaviour for INTERNAL SERVER ERROR (500) errors. |
 | `cachedResponseStatus` | `number` | `304` | Determines the http status code for the cached response |
