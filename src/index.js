@@ -44,8 +44,7 @@ export default function cachePlugin (instance, customSettings) {
         const cachedResponse = cache[key] // Look for the cached response
         if (cachedResponse) {
           config.cachedResponse = cachedResponse
-          config.cachedResponseMessage = 'Fallback to cache'
-          response = cachedResponseBuilder(config)
+          response = cachedResponseBuilder(config, true)
         }
       } else if (cache) {
         store.dispatch('cache', { config, data }) // Cache the response
@@ -54,10 +53,18 @@ export default function cachePlugin (instance, customSettings) {
     }
 
     /* AXIOS INSTANCE CONFIGURATION */
-    const { cachedResponseStatus = 304, cachedResponseMessage = 'Not modified' } = customSettings || {}
+    const {
+      cachedResponseStatus = 304,
+      cachedResponseMessage = 'Not modified',
+      fallbackResponseMessage = 'Fallback result',
+      fallbackResponseStatus,
+    } = customSettings || {}
+    
     instance.defaults.cache = false // Calls are not cached by default
     instance.defaults.cachedResponseStatus = cachedResponseStatus
     instance.defaults.cachedResponseMessage = cachedResponseMessage
+    instance.defaults.fallbackResponseStatus = fallbackResponseStatus || cachedResponseStatus
+    instance.defaults.fallbackResponseMessage = fallbackResponseMessage
     instance.defaults.groups = []
     instance.interceptors.request.use(RequestInterceptor)
     instance.interceptors.response.use(ResponseInterceptor)
