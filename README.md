@@ -39,11 +39,11 @@ export const store = new Vuex.Store({
 })
 ```
 
-## Default settings
+## Default global settings
 
 By default, the plugin is configured to cache only 'get' requests for every request that uses the axios instance. It stores the response for 60 seconds and has the garbage colector set to true so the store will clean itself up after a response is outdated.
 
-## Using custom settings
+## Using custom global settings
 
 An object specifying custom settings can be passed as a second argument. This settings will override the default settings.
 
@@ -66,7 +66,7 @@ const config = {
 const cachePlugin = cache(axiosInstance, config)
 ```
 
-### Settings
+### Global settings
 
 The custom configuration object can have the following properties.
 
