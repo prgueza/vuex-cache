@@ -57,7 +57,7 @@ export default function cachePlugin (instance, customSettings) {
 
     /* CACHE DEFAULT SETTINGS */
     const defaultSettings = {
-      methods: ['post', 'get'],
+      methods: ['get'],
       endpoints: [],
       garbageColector: true, // Remove old calls automatically
       ttl: 60 // Default cache time to live in seconds
