@@ -80,7 +80,7 @@ The custom configuration object can have the following properties.
 | `cachedResponseStatus` | `number` | `304` | Determines the http status code for the cached response |
 | `cachedResponseMessage` | `string` | `'Not Modified'` | Determines the status message for the cached response |
 
-#### methods
+- #### `methods` and `endpoints`
 
 By default the plugin will cache only get requests and only if the `endpoints` property is not set. If we set the `endpoints` property for caching a specific method/endpoint request, and we still want to cache all the 'get' requests for the other endpoints, the `methods` property must be set manually and passed as a custom configuration.
 
@@ -112,15 +112,68 @@ const config = {
 }
 ```
 
-#### ttl
+When the `endpoints` setting is set the plugin will cache the responses from endpoints that match the endpoint property of each object within the setting. If we want to catch endpoints that exactly match this property, the match property must be set to true.
+
+For example, if the `/users` endpoint returns a list of users and the `/users/:id` endpoint returns details about a specific user, we can cache just the list service which returns basic data unlikely to change, but still ask the server for the details.
+
+```js
+// This configuration will cache get requests for the /users endpoint and
+// the /users/:id endpoints
+const config = {
+  endpoitns: [{
+    endpoint: '/users',
+    methods: ['get']
+  }]
+}
+
+// This configuration will ONLY cache get requests for the /users endpoint and
+// not for the specific /users/:id endpoints
+const config = {
+  endpoitns: [{
+    endpoint: '/users',
+    methods: ['get'],
+    exact: true
+  }]
+}
+```
+
+- #### `ttl`
 
 The `ttl` property specifies for how long a cached response is considered as valid. This means that if we make a request to an already cached endpoint, and `ttl` seconds haven't passed, the response will be the cached response from the previous request. On the other hand, if `ttl` seconds have passed, the response is considered outdated and the request is then resolved by the server.
 
 If the `garbageCollector` property is set to `false`, outdated cached responses will be used as a valid response if the server returns any error included in the `fallback` configuration array.
 
 ```js
-// By default, responses will be considered as still valid for 60 seconds
 const config = {
   ttl: 120 // Manually set the ttl to 2 minutes
+}
+```
+
+- #### `garbageCollector`
+
+The `garbageCollector` property configures timers for the cached response to clean themselves up. Once their `ttl` has expired, the pair key/value for the response is deleted from the cache store. When `garbageCollector` is set to true the plugin won't test cached responses expiration date, but the `ttl` is still needed in order to configure the timers. If not set manually, responses will disappear after 60 seconds.
+
+```js
+const config = {
+  ttl: 120, // seconds
+  garbageCollector: true // Responses will be deleted after 2 minutes
+}
+```
+
+- #### `fallback`
+
+The `fallback` property is used to determine a list of [http status codes](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) for which the response will try to return a cached response for that endpoint if it has been stored previously. If the `garbageCollector` is set to true this feature will not work, because outdated responses are deleted and the only way to ask the service for a new response before the cached one has been deleted would be forcing the request using the `reload` request configuration. When forcing the reload it doesn't make much sense to return cached data, which could lead to confusion.
+
+By default, internal server errors (500) will try to fallback to cached data.
+
+```js
+// Use the fallback feature for internal server (500) errors and not found (404) errors
+const config = {
+  fallback: [500, 404]
+}
+
+// disable the fallback feature
+const config {
+  fallback: []
 }
 ```
