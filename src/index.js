@@ -1,6 +1,7 @@
 import stringHash from 'string-hash'
 import moment from 'moment'
 import isCached from './utils/isCached.js'
+import cachedResponseBuilder from './utils/cachedResponseBuilder.js'
 
 /* CACHE PLUGIN */
 export default function cachePlugin (instance, customSettings) {
@@ -11,17 +12,12 @@ export default function cachePlugin (instance, customSettings) {
     // Axios adapter function that simulates the server responding with cached data
     const Adapter = (config) => {
       const { data } = config.cachedResponse
-      return Promise.resolve({
-        data,
-        config,
-        status: config.cachedResponseStatus,
-        statusText: config.cachedResponseMessage
-      })
+      return Promise.resolve(cachedResponseBuilder(config))
     }
 
     // Axios interceptor function that checks if the request is cached
     const RequestInterceptor = (config) => {
-      const { method, url, baseURL, clean, garbageColector: localGarbageColector, data } = config
+      const { method, url, baseURL, clean, garbageColector: localGarbageColector, data, reload } = config
       const { methods, endpoints, cache, garbageColector: globalGarbageColector } = store.getters
       const garbageColector = localGarbageColector === undefined ? globalGarbageColector : localGarbageColector
       // If the clean setting is set in the config, clean up cache before making the request
@@ -31,7 +27,7 @@ export default function cachePlugin (instance, customSettings) {
         config.cache = true // Set cache to true so the response gets stored
         const key = stringHash(baseURL + url + JSON.stringify(data))
         const cachedResponse = cache[key] // Look for the cached response
-        if (cachedResponse && (garbageColector || moment(cachedResponse.expires).isAfter(moment()))) { // If the response is stored in cache
+        if (!reload && cachedResponse && (garbageColector || moment(cachedResponse.expires).isAfter(moment()))) {
           config.cachedResponse = cachedResponse // Store cached response in config
           config.adapter = Adapter // Set the adapter to return the cached response
           config.cache = false // Set cache to false so the response interceptor doesn't re-store the response data
@@ -42,24 +38,36 @@ export default function cachePlugin (instance, customSettings) {
 
     // Axios interceptor functions that caches the response from the server
     const ResponseInterceptor = (response) => {
-      const { config: { cache }, config, data } = response
-      if (cache) store.dispatch('cache', { config, data }) // Cache the response
+      const { config: { cache, baseURL, url, data: body }, config, data, status } = response
+      if (store.getters.fallback.includes(status)) {
+        const key = stringHash(baseURL + url + JSON.stringify(body))
+        const cachedResponse = cache[key] // Look for the cached response
+        if (cachedResponse) {
+          config.cachedResponse = cachedResponse
+          config.cachedResponseMessage = 'Fallback to cache'
+          response = cachedResponseBuilder(config)
+        }
+      } else if (cache) {
+        store.dispatch('cache', { config, data }) // Cache the response
+      }
       return response
     }
 
     /* AXIOS INSTANCE CONFIGURATION */
+    const { cachedResponseStatus = 304, cachedResponseMessage = 'Not modified' } = customSettings || {}
     instance.defaults.cache = false // Calls are not cached by default
-    instance.defaults.cachedResponseStatus = customSettings.cachedResponseStatus || 304
-    instance.defaults.cachedResponseMessage = customSettings.cachedResponseMessage || 'Not modified'
+    instance.defaults.cachedResponseStatus = cachedResponseStatus
+    instance.defaults.cachedResponseMessage = cachedResponseMessage
     instance.defaults.groups = []
     instance.interceptors.request.use(RequestInterceptor)
     instance.interceptors.response.use(ResponseInterceptor)
 
     /* CACHE DEFAULT SETTINGS */
     const defaultSettings = {
-      methods: ['post', 'get'],
+      methods: ['get'],
       endpoints: [],
       garbageColector: true, // Remove old calls automatically
+      fallback: [500],
       ttl: 60 // Default cache time to live in seconds
     }
 
@@ -81,6 +89,7 @@ export default function cachePlugin (instance, customSettings) {
         methods: (state) => state.methods,
         endpoints: (state) => state.endpoints,
         garbageColector: (state) => state.garbageColector,
+        fallback: (state) => state.fallback,
         ttl: (state) => state.ttl * 1000 // Convert to ms
       },
       mutations: {
