@@ -15,7 +15,7 @@ $ npm install --save @pedro-rodalia/cache
 
 ## Basic usage
 
-The cache vuex plugin uses axios interceptors and adapters in order to implement a cache system, so it needs an axios instance in order to work. The axios instance is passed as the first argument to the plugin initialization function. If there is no second argument specifying custom settings, it will run using the default settings.
+The cache vuex plugin uses axios interceptors and adapters in order to implement a cache system, so it needs an axios instance for it to work. The axios instance is passed as the first argument to the plugin initialization function. If there is no second argument specifying custom settings, it will run using the default settings.
 
 ```js
 // Import cache package
@@ -39,9 +39,14 @@ export const store = new Vuex.Store({
 })
 ```
 
+## Default global settings
+
+By default, the plugin is configured to cache only `'get'` requests for every request that uses the axios instance. It stores the response for `60` seconds and has the `garbageCollector` set to `false` so the store will not clean itself up after a response is outdated.
+
+It will try to `fallback` to cached responses on internal server errors (500) and return responses with a `304` status and a `'Not modified'` message for cached responses and `'Fallback result'` for fallback responses.
+
 ## Documentation
 
-- [Default global settings](#default-global-settings)
 - [Using custom global settings](#using-custom-global-settings)
   - [Global settings](#global-settings)
     - [`methods` and `endpoints`](#methods-and-endpoints)
@@ -52,12 +57,6 @@ export const store = new Vuex.Store({
     - [`fallbackResponseStatus` and `cachedResponseMessage`](#fallbackresponsestatus-and-fallbackresponsemessage)
 - [Using custom request settings](#request-settings)
 
-## Default global settings
-
-By default, the plugin is configured to cache only `'get'` requests for every request that uses the axios instance. It stores the response for `60` seconds and has the `garbageCollector` set to `false` so the store will not clean itself up after a response is outdated.
-
-It will try to `fallback` to cached responses on internal server errors (500) and return responses with a `304` status and a `'Not modified'` message for cached responses and `'Fallback result'` for fallback responses.
-
 ## Using custom global settings
 
 An object specifying custom settings can be passed as a second argument. This settings will override the default settings.
@@ -66,15 +65,18 @@ An object specifying custom settings can be passed as a second argument. This se
 // Declare a configuration object
 const config = {
   methods: ['get', 'post'],
-  ttl: 120,
-  garbageCollector: false,
   endpoints: [{
     endpoint: '/users',
-    methods: ['get', 'post']
+    methods: ['get', 'post'],
+    exact: true
   }],
+  ttl: 120,
+  garbageCollector: false,
   fallback: [400, 500],
   cachedResponseStatus: 304,
-  cachedResponseMessage: 'This is a cached response'
+  cachedResponseMessage: 'This is a cached response',
+  fallbackResponseStatus: 304,
+  fallbackResponseMessage: 'This is a fallback response'
 }
 
 // Initialize Vuex plugin using the created instance and custom settings
@@ -88,9 +90,9 @@ The custom configuration object can have the following properties.
 | Name | Type | Default | Description |
 | :------------- | :------------- | :------------- | :------------- |
 | `methods` | `array` | `['get']` | Defines a list of methods for which the responses will be cached |
+| `endpoints` | `array/object` | `[]` | Defines a list of endpoints for which the responses will be cached / Defines an object with key/value pairs defining both the endpoint and the methods for the requests that will be cached |
 | `ttl` | `number` | `60` | Determines for how long a cached response is considered valid |
 | `garbageCollector` | `boolean` | `false` | If set to true responses will clean themselves up after they are no longer valid responses (`ttl` seconds have passed) |
-| `endpoints` | `array/object` | `[]` | Defines a list of endpoints for which the responses will be cached / Defines an object with key/value pairs defining both the endpoint and the methods for the requests that will be cached |
 | `fallback` | `array` | `[500]` | Determines whether to answer a request with an outdated cached response if the request has returned an error. By default it only has this behaviour for INTERNAL SERVER ERROR (500) errors. |
 | `cachedResponseStatus` | `number` | `304` | Determines the http status code for the cached response |
 | `cachedResponseMessage` | `string` | `'Not Modified'` | Determines the status message for the cached response |
@@ -218,3 +220,57 @@ const config = {
   fallbackResponseMessage: 'OK'
 }
 ```
+
+## Using custom request settings
+
+:construction: Axios request configuration can be set as usual, but it's not fully tested so some configurations might interfere with the plugin.
+
+Most of the **global properties** can be set within the request configuration object and would provide the same functionality for that specific request.
+
+| Name | Type | Default (from global) | Description |
+| :------------- | :------------- | :------------- | :------------- |
+| `ttl` | `number` | `ttl` | Determines for how long a cached response is considered valid |
+| `garbageCollector` | `boolean` | `garbageCollector` | If set to true responses will clean themselves up after they are no longer valid responses (`ttl` seconds have passed) |
+| `fallback` | `array` | `fallback` | Determines whether to answer a request with an outdated cached response if the request has returned an error. By default it only has this behaviour for INTERNAL SERVER ERROR (500) errors. |
+| `cachedResponseStatus` | `number` | `cachedResponseStatus` | Determines the http status code for the cached response |
+| `cachedResponseMessage` | `string` | `cachedResponseMessage` | Determines the status message for the cached response |
+| `fallbackResponseStatus` | `number` | `cachedResponseStatus` | Determines the http status code for the outdated cached responses used with the `fallback` feature |
+| `fallbackResponseMessage` | `string` | `fallbackResponseStatus` | Determines the status message for the outdated cached responses used with the `fallback` feature |
+
+There are two more configuration options for specific requests which help manage the cache status.
+
+#### Creating groups (`groups`)
+
+Requests can be grouped under a unique identifier using the `group` property. This will save a reference to the cachedResponses that belong to the same group, so they can be deleted easily when needed.
+
+This is useful because sometimes we want a specific request that modifies data in the server to clear any related cached response which would contain outdated data.
+
+In order to achieve this we would group all the related requests under the same group. Requests can belong to multiple teams at once.
+
+```js
+// Request configuration
+const requestConfiguration = { groups: ['users'] }
+
+// Use this configuration within multiple requests
+api.get('/users', requestConfiguration).then()
+api.get('/users/:id', requestConfiguration).then()
+```
+
+#### Clearing groups (`clear`)
+
+If we want to clear requests that belong to a specific group when we make a different request, the `clear` setting must specify a list of groups we want to be cleared.
+
+For instance, if we ask the server for a list of users that we think might have changed (using the `reload` setting), we probably want the cache to remove all the cached responses for the individual users. This way, when afterwards we ask for a specific user, we get fresh data from the server.
+
+```js
+// Request configuration
+const requestConfiguration = { reload: true, clear: ['users'] }
+
+// Clear the 'users' group
+api.get('/users', requestConfiguration).then()
+
+// Get fresh data from the server
+api.get('/users/:id').then()
+```
+
+*The request that triggers this setting doesn't necessary need to belong to the groups it clears.*
