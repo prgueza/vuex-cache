@@ -17,11 +17,11 @@ export default function cachePlugin (instance, customSettings) {
 
     // Axios interceptor function that checks if the request is cached
     const RequestInterceptor = (config) => {
-      const { method, url, baseURL, clean, garbageCollector: localgarbageCollector, data, reload } = config
+      const { method, url, baseURL, clear, garbageCollector: localgarbageCollector, data, reload } = config
       const { methods, endpoints, cache, garbageCollector: globalgarbageCollector } = store.getters
       const garbageCollector = localgarbageCollector === undefined ? globalgarbageCollector : localgarbageCollector
-      // If the clean setting is set in the config, clean up cache before making the request
-      if (clean) store.dispatch('clean', { clean })
+      // If the clear setting is set in the config, clear up cache before making the request
+      if (clear) store.dispatch('clear', { clear })
       // If the request could've been cached
       if (isCached(methods, endpoints, config)) {
         config.cache = true // Set cache to true so the response gets stored
@@ -153,8 +153,8 @@ export default function cachePlugin (instance, customSettings) {
           })
           commit('SET_CACHE', { key, value })
         },
-        clean ({ state, commit, getters }, payload) {
-          const { clean: groupNames } = payload // Groups with related calls to be deleted
+        clear ({ state, commit, getters }, payload) {
+          const { clear: groupNames } = payload // Groups with related calls to be deleted
           const { group } = getters // Existing groups within the cache system
           groupNames.forEach(name => {
             group(name) && group(name).forEach(key => {
