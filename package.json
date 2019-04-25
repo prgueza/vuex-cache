@@ -1,6 +1,6 @@
 {
  "name": "@pedro-rodalia/vuex-cache",
- "version": "0.0.1-1",
+ "version": "1.0.0",
  "description": "Vue cache plugin for axios using vuex store",
  "license": "MIT",
  "repository": "pedro-rodalia/vuex-cache",
