@@ -1,16 +1,16 @@
-# @pedro-rodalia/cache
+# @pedro-rodalia/vuex-cache
 
 [![npm](https://img.shields.io/npm/v/@pedro-rodalia/vuex-cache.svg)](https://github.com/pedro-rodalia/vuex-cache)
 [![npm bundle size (minified)](https://img.shields.io/bundlephobia/min/@pedro-rodalia/vuex-cache.svg)](https://github.com/pedro-rodalia/vuex-cache)
 
-Configurable Vue cache plugin for axios using the vuex store.
+Configurable [Vue.js](https://vuejs.org/) cache plugin for [axios](https://github.com/axios/axios) using the [vuex](https://vuex.vuejs.org/) store.
 
 ## Install
 
 Install the package using npm and save it as a dependency.
 
 ```
-$ npm install --save @pedro-rodalia/cache
+$ npm install --save @pedro-rodalia/vuex-cache
 ```
 
 ## Basic usage
@@ -19,7 +19,7 @@ The cache vuex plugin uses axios interceptors and adapters in order to implement
 
 ```js
 // Import cache package
-import cache from '@pedro-rodalia/cache'
+import cache from '@pedro-rodalia/vuex-cache'
 
 // Create an axios instance where the cache will be implemented
 const axiosInstance = axios.create(axios.defaults)
@@ -55,7 +55,9 @@ It will try to `fallback` to cached responses on internal server errors (500) an
     - [`fallback`](#fallback)
     - [`cachedResponseStatus` and `cachedResponseMessage`](#cachedresponsestatus-and-cachedresponsemessage)
     - [`fallbackResponseStatus` and `cachedResponseMessage`](#fallbackresponsestatus-and-fallbackresponsemessage)
-- [Using custom request settings](#request-settings)
+- [Using custom request settings](#using-custom-request-settings)
+  - [Creating groups (`groups`)](#creating-groups-groups)
+  - [Clearing groups (`clear`)](#clearing-groups-clear)
 
 ## Using custom global settings
 
