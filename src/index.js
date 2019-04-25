@@ -17,17 +17,17 @@ export default function cachePlugin (instance, customSettings) {
 
     // Axios interceptor function that checks if the request is cached
     const RequestInterceptor = (config) => {
-      const { method, url, baseURL, clean, garbageColector: localGarbageColector, data, reload } = config
-      const { methods, endpoints, cache, garbageColector: globalGarbageColector } = store.getters
-      const garbageColector = localGarbageColector === undefined ? globalGarbageColector : localGarbageColector
-      // If the clean setting is set in the config, clean up cache before making the request
-      if (clean) store.dispatch('clean', { clean })
+      const { method, url, baseURL, clear, garbageCollector: localgarbageCollector, data, reload } = config
+      const { methods, endpoints, cache, garbageCollector: globalgarbageCollector } = store.getters
+      const garbageCollector = localgarbageCollector === undefined ? globalgarbageCollector : localgarbageCollector
+      // If the clear setting is set in the config, clear up cache before making the request
+      if (clear) store.dispatch('clear', { clear })
       // If the request could've been cached
       if (isCached(methods, endpoints, config)) {
         config.cache = true // Set cache to true so the response gets stored
         const key = stringHash(baseURL + url + JSON.stringify(data))
         const cachedResponse = cache[key] // Look for the cached response
-        if (!reload && cachedResponse && (garbageColector || moment(cachedResponse.expires).isAfter(moment()))) {
+        if (!reload && cachedResponse && (garbageCollector || moment(cachedResponse.expires).isAfter(moment()))) {
           config.cachedResponse = cachedResponse // Store cached response in config
           config.adapter = Adapter // Set the adapter to return the cached response
           config.cache = false // Set cache to false so the response interceptor doesn't re-store the response data
@@ -38,14 +38,13 @@ export default function cachePlugin (instance, customSettings) {
 
     // Axios interceptor functions that caches the response from the server
     const ResponseInterceptor = (response) => {
-      const { config: { cache, baseURL, url, data: body }, config, data, status } = response
-      if (store.getters.fallback.includes(status)) {
+      const { config: { cache, baseURL, url, data: body, reload }, config, data, status } = response
+      if (!reload && store.getters.fallback.includes(status)) {
         const key = stringHash(baseURL + url + JSON.stringify(body))
         const cachedResponse = cache[key] // Look for the cached response
         if (cachedResponse) {
           config.cachedResponse = cachedResponse
-          config.cachedResponseMessage = 'Fallback to cache'
-          response = cachedResponseBuilder(config)
+          response = cachedResponseBuilder(config, true)
         }
       } else if (cache) {
         store.dispatch('cache', { config, data }) // Cache the response
@@ -54,10 +53,18 @@ export default function cachePlugin (instance, customSettings) {
     }
 
     /* AXIOS INSTANCE CONFIGURATION */
-    const { cachedResponseStatus = 304, cachedResponseMessage = 'Not modified' } = customSettings || {}
+    const {
+      cachedResponseStatus = 304,
+      cachedResponseMessage = 'Not modified',
+      fallbackResponseMessage = 'Fallback result',
+      fallbackResponseStatus,
+    } = customSettings || {}
+
     instance.defaults.cache = false // Calls are not cached by default
     instance.defaults.cachedResponseStatus = cachedResponseStatus
     instance.defaults.cachedResponseMessage = cachedResponseMessage
+    instance.defaults.fallbackResponseStatus = fallbackResponseStatus || cachedResponseStatus
+    instance.defaults.fallbackResponseMessage = fallbackResponseMessage
     instance.defaults.groups = []
     instance.interceptors.request.use(RequestInterceptor)
     instance.interceptors.response.use(ResponseInterceptor)
@@ -66,7 +73,7 @@ export default function cachePlugin (instance, customSettings) {
     const defaultSettings = {
       methods: ['get'],
       endpoints: [],
-      garbageColector: true, // Remove old calls automatically
+      garbageCollector: false,
       fallback: [500],
       ttl: 60 // Default cache time to live in seconds
     }
@@ -88,7 +95,7 @@ export default function cachePlugin (instance, customSettings) {
         group: (state) => (key) => state.groups[key],
         methods: (state) => state.methods,
         endpoints: (state) => state.endpoints,
-        garbageColector: (state) => state.garbageColector,
+        garbageCollector: (state) => state.garbageCollector,
         fallback: (state) => state.fallback,
         ttl: (state) => state.ttl * 1000 // Convert to ms
       },
@@ -125,15 +132,15 @@ export default function cachePlugin (instance, customSettings) {
           const { config, data } = payload
           const { groups = [], url, data: body } = config
           const groupsArray = Object.values(groups)
-          const garbageColector = config.garbageColector || getters.garbageColector // Custom or default garbage colector
+          const garbageCollector = config.garbageCollector || getters.garbageCollector // Custom or default garbage colector
           const ttl = config.ttl || getters.ttl // Custom or default ttl
           const key = stringHash(url + body)
-          const garbageColectorId = getters.cache[key] && getters.cache[key].garbageColectorId // If the call is already cached
-          if (garbageColectorId) clearTimeout(garbageColectorId) // Unset the timeout
+          const garbageCollectorId = getters.cache[key] && getters.cache[key].garbageCollectorId // If the call is already cached
+          if (garbageCollectorId) clearTimeout(garbageCollectorId) // Unset the timeout
           const value = {
             data,
             body,
-            garbageColectorId: garbageColector && setTimeout(() => { commit('DELETE_FROM_CACHE', { key }) }, ttl),
+            garbageCollectorId: garbageCollector && setTimeout(() => { commit('DELETE_FROM_CACHE', { key }) }, ttl),
             endpoint: config.url,
             groups: groupsArray,
             expires: moment().add(ttl, 'milliseconds').format(),
@@ -146,13 +153,13 @@ export default function cachePlugin (instance, customSettings) {
           })
           commit('SET_CACHE', { key, value })
         },
-        clean ({ state, commit, getters }, payload) {
-          const { clean: groupNames } = payload // Groups with related calls to be deleted
+        clear ({ state, commit, getters }, payload) {
+          const { clear: groupNames } = payload // Groups with related calls to be deleted
           const { group } = getters // Existing groups within the cache system
           groupNames.forEach(name => {
             group(name) && group(name).forEach(key => {
-              const { garbageColectorId } = getters.call(key)
-              if (garbageColectorId) clearTimeout(garbageColectorId) // Unset the timeout
+              const { garbageCollectorId } = getters.call(key)
+              if (garbageCollectorId) clearTimeout(garbageCollectorId) // Unset the timeout
               commit('DELETE_FROM_CACHE', { key }) // Delete responses
             })
             commit('DELETE_GROUP', { name }) // Delete the group
