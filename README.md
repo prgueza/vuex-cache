@@ -194,7 +194,7 @@ const config = {
 }
 
 // disable the fallback feature
-const config {
+const config = {
   fallback: []
 }
 ```
