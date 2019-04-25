@@ -3,7 +3,7 @@
 [![npm](https://img.shields.io/npm/v/@pedro-rodalia/vuex-cache.svg)](https://github.com/pedro-rodalia/vuex-cache)
 [![npm bundle size (minified)](https://img.shields.io/bundlephobia/min/@pedro-rodalia/vuex-cache.svg)](https://github.com/pedro-rodalia/vuex-cache)
 
-Configurable Vue cache plugin for axios using the vuex store.
+Configurable [Vue.js](https://vuejs.org/) cache plugin for [axios](https://github.com/axios/axios) using the [vuex](https://vuex.vuejs.org/) store.
 
 ## Install
 
