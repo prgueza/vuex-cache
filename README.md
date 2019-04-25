@@ -55,7 +55,9 @@ It will try to `fallback` to cached responses on internal server errors (500) an
     - [`fallback`](#fallback)
     - [`cachedResponseStatus` and `cachedResponseMessage`](#cachedresponsestatus-and-cachedresponsemessage)
     - [`fallbackResponseStatus` and `cachedResponseMessage`](#fallbackresponsestatus-and-fallbackresponsemessage)
-- [Using custom request settings](#request-settings)
+- [Using custom request settings](#using-custom-request-settings)
+  - [Creating groups (`groups`)](#creating-groups-(groups))
+  - [Clearing groups (`clear`)](#clearing-groups-(clear))
 
 ## Using custom global settings
 
